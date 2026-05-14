@@ -299,12 +299,77 @@
       margin: 0 auto;
     }
 
+    /* ── Mobile filter drawer ── */
+    .mobile-filter-toggle {
+      display: none;
+    }
+
     @media (max-width: 600px) {
       .arabic { font-size: 20px; }
       .dua-card { padding: 14px 16px; }
       h1 { font-size: 18px; }
       .header-top { gap: 10px; }
       .bismillah { font-size: 16px; }
+
+      /* Hide the desktop pill row on mobile */
+      .categories {
+        display: none;
+      }
+
+      /* Show the mobile toggle */
+      .mobile-filter-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.28);
+        border-radius: 8px;
+        padding: 8px 14px;
+        color: #fff;
+        font-size: 13px;
+        cursor: pointer;
+        transition: background 0.15s;
+        gap: 8px;
+      }
+      .mobile-filter-toggle:hover,
+      .mobile-filter-toggle.open {
+        background: rgba(255,255,255,0.2);
+      }
+      .mobile-filter-label {
+        flex: 1;
+        text-align: left;
+        font-weight: 500;
+      }
+      .mobile-filter-chevron {
+        font-size: 11px;
+        opacity: 0.7;
+        transition: transform 0.2s;
+      }
+      .mobile-filter-toggle.open .mobile-filter-chevron {
+        transform: rotate(180deg);
+      }
+
+      /* Dropdown panel */
+      .mobile-filter-panel {
+        display: none;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 10px 0 4px;
+        animation: slideDown 0.18s ease;
+      }
+      .mobile-filter-panel.open {
+        display: flex;
+      }
+      @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-6px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      /* Reuse cat-btn styles inside panel */
+      .mobile-filter-panel .cat-btn {
+        font-size: 11px;
+        padding: 4px 10px;
+      }
     }
   </style>
 </head>
@@ -323,6 +388,16 @@
       <input type="text" id="search" placeholder="Search by name, situation, keyword…" autocomplete="off" />
       <span class="search-icon">⌕</span>
     </div>
+
+    <!-- Mobile-only collapsible filter -->
+    <button class="mobile-filter-toggle" id="mobileFilterToggle" aria-expanded="false" aria-controls="mobileFilterPanel">
+      <span class="mobile-filter-label" id="mobileFilterLabel">📋 All Categories</span>
+      <span class="mobile-filter-chevron">▼</span>
+    </button>
+    <div class="mobile-filter-panel" id="mobileFilterPanel" role="listbox">
+      <!-- buttons injected by JS -->
+    </div>
+
     <div class="categories" id="categories">
       <button class="cat-btn active" data-cat="all">All</button>
       <button class="cat-btn" data-cat="morning">🌅 Morning</button>
@@ -2175,25 +2250,76 @@ function render() {
 document.getElementById("search").addEventListener("input", e => {
   searchQuery = e.target.value;
   if (searchQuery) {
-    // Deactivate category buttons during search
-    document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
+    // Deactivate desktop category buttons during search
+    document.querySelectorAll("#categories .cat-btn").forEach(b => b.classList.remove("active"));
   } else {
-    document.querySelector(`[data-cat="${activeCategory}"]`).classList.add("active");
+    document.querySelectorAll(`#categories [data-cat="${activeCategory}"]`).forEach(b => b.classList.add("active"));
+    if (window._updateMobileLabel) window._updateMobileLabel(activeCategory);
   }
   render();
 });
 
-// Category buttons
+// ── Desktop category buttons ─────────────────────────────────────
 document.getElementById("categories").addEventListener("click", e => {
   const btn = e.target.closest(".cat-btn");
   if (!btn) return;
-  activeCategory = btn.dataset.cat;
+  selectCategory(btn.dataset.cat);
+});
+
+// ── Mobile filter drawer ──────────────────────────────────────────
+(function buildMobilePanel() {
+  const panel  = document.getElementById("mobileFilterPanel");
+  const toggle = document.getElementById("mobileFilterToggle");
+  const label  = document.getElementById("mobileFilterLabel");
+
+  // Populate panel with the same buttons
+  const all = [{ cat:"all", text:"📋 All Categories" }].concat(
+    SECTIONS.map(s => ({ cat: s.id, text: s.icon + " " + s.label }))
+  );
+  panel.innerHTML = all.map(item =>
+    `<button class="cat-btn${item.cat === "all" ? " active" : ""}" data-cat="${item.cat}">${item.text}</button>`
+  ).join("");
+
+  // Toggle open/close
+  toggle.addEventListener("click", () => {
+    const isOpen = panel.classList.toggle("open");
+    toggle.classList.toggle("open", isOpen);
+    toggle.setAttribute("aria-expanded", isOpen);
+  });
+
+  // Select from panel
+  panel.addEventListener("click", e => {
+    const btn = e.target.closest(".cat-btn");
+    if (!btn) return;
+    selectCategory(btn.dataset.cat);
+    // Close panel after pick
+    panel.classList.remove("open");
+    toggle.classList.remove("open");
+    toggle.setAttribute("aria-expanded", "false");
+  });
+
+  // Keep label in sync
+  window._updateMobileLabel = function(cat) {
+    const item = all.find(i => i.cat === cat);
+    label.textContent = item ? item.text : "📋 All Categories";
+    panel.querySelectorAll(".cat-btn").forEach(b =>
+      b.classList.toggle("active", b.dataset.cat === cat)
+    );
+  };
+})();
+
+function selectCategory(cat) {
+  activeCategory = cat;
   searchQuery = "";
   document.getElementById("search").value = "";
-  document.querySelectorAll(".cat-btn").forEach(b => b.classList.remove("active"));
-  btn.classList.add("active");
+  // Desktop buttons
+  document.querySelectorAll("#categories .cat-btn").forEach(b =>
+    b.classList.toggle("active", b.dataset.cat === cat)
+  );
+  // Mobile label + panel highlight
+  if (window._updateMobileLabel) window._updateMobileLabel(cat);
   render();
-});
+}
 
 // Initial render
 render();
