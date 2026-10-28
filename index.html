@@ -374,6 +374,113 @@
         padding: 4px 10px;
       }
     }
+
+    /* ── Dua of the Day Hero ──────────────────────────────────── */
+    #dotd-hero {
+      background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 60%, #3a8a65 100%);
+      color: #fff;
+      padding: 36px 24px 32px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    #dotd-hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M40 0C17.9 0 0 17.9 0 40s17.9 40 40 40 40-17.9 40-40S62.1 0 40 0zm0 72C22.4 72 8 57.6 8 40S22.4 8 40 8s32 14.4 32 32-14.4 32-32 32z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+      pointer-events: none;
+    }
+    .dotd-label {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .dotd-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #d4ffe8;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+    }
+    .dotd-date {
+      color: rgba(255,255,255,0.55);
+      font-size: 12px;
+      letter-spacing: 0.3px;
+    }
+    .dotd-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.65);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+    .dotd-arabic {
+      font-family: 'Amiri', serif;
+      font-size: clamp(26px, 5vw, 38px);
+      color: #fff;
+      direction: rtl;
+      line-height: 1.8;
+      margin: 0 auto 18px;
+      max-width: 800px;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .dotd-transliteration {
+      font-style: italic;
+      font-size: 14px;
+      color: rgba(255,255,255,0.72);
+      max-width: 680px;
+      margin: 0 auto 16px;
+      line-height: 1.6;
+    }
+    .dotd-translation {
+      font-size: 15px;
+      color: #d4ffe8;
+      max-width: 640px;
+      margin: 0 auto 20px;
+      line-height: 1.65;
+      font-weight: 400;
+    }
+    .dotd-meta {
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .dotd-source {
+      display: inline-block;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.75);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+    .dotd-note {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      max-width: 520px;
+      line-height: 1.5;
+      font-style: italic;
+    }
+    @media (max-width: 600px) {
+      #dotd-hero { padding: 28px 18px 26px; }
+      .dotd-arabic { font-size: 24px; }
+      .dotd-translation { font-size: 14px; }
+    }
   </style>
 </head>
 <body>
@@ -430,6 +537,8 @@
     </div>
   </div>
 </header>
+
+<div id="dotd-hero"></div>
 
 <main id="main">
   <div class="result-count" id="result-count"></div>
@@ -2326,6 +2435,79 @@ function selectCategory(cat) {
 
 // Initial render
 render();
+
+// ── Dua of the Day ────────────────────────────────────────────────────────
+(function() {
+  // Simple deterministic hash-based PRNG seeded from today's date string
+  function makeRand(seed) {
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < seed.length; i++) {
+      h ^= seed.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return function() {
+      h ^= h << 13; h >>>= 0;
+      h ^= h >> 17; h >>>= 0;
+      h ^= h << 5;  h >>>= 0;
+      return h / 4294967296;
+    };
+  }
+
+  const now = new Date();
+  const seed = now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate();
+
+  // IDs of especially important / frequently recommended duas — appear 4× in pool
+  const important = new Set([
+    1,   // Waking Up
+    3,   // Sayyid al-Istighfar
+    6,   // Ayat al-Kursi (evening)
+    15,  // Dua of Yunus (hardship)
+    52,  // Halal sufficiency (rizq)
+    57,  // Simple repentance
+    61,  // A'udhu billahi (protection)
+    64,  // Ya muqallibal quloob
+    78,  // Al-Fatiha
+    79,  // Rabbana atina (this world & next)
+    88,  // Dua of Musa (confidence)
+    91,  // Laylat al-Qadr
+    93,  // Dua in extreme distress
+    99,  // When you feel oppressed (read 7×)
+    100, // Last two verses of Al-Baqarah
+    102, // Dua for relief from panic
+    111, // Inna lillahi (complete, dua of loss)
+  ]);
+
+  // Build weighted pool
+  const pool = [];
+  DUAS.forEach(d => {
+    const weight = important.has(d.id) ? 4 : 1;
+    for (let i = 0; i < weight; i++) pool.push(d);
+  });
+
+  const rand = makeRand(seed);
+  const dua = pool[Math.floor(rand() * pool.length)];
+
+  // Format display date
+  const DAY_NAMES   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const displayDate = `${DAY_NAMES[now.getDay()]}, ${MONTH_NAMES[now.getMonth()]} ${now.getDate()}, ${now.getFullYear()}`;
+
+  // Render
+  document.getElementById('dotd-hero').innerHTML = `
+    <div class="dotd-label">
+      <span class="dotd-badge">✦ Dua of the Day</span>
+      <span class="dotd-date">${displayDate}</span>
+    </div>
+    <div class="dotd-title">${dua.title}</div>
+    <div class="dotd-arabic">${dua.arabic}</div>
+    <div class="dotd-transliteration">${dua.transliteration}</div>
+    <div class="dotd-translation">"${dua.translation}"</div>
+    <div class="dotd-meta">
+      <span class="dotd-source">${dua.source}</span>
+      ${dua.note ? `<span class="dotd-note">${dua.note}</span>` : ''}
+    </div>
+  `;
+})();
 </script>
 </body>
 </html>
